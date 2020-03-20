@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>初始化</title>
+    <link rel="stylesheet" href="./css/video-js.css"/>
+<!--[if IE 8]> 
+    <script src="../js/videojs-ie8.js"></script>
+<![endIf]-->
+    <script src="./js/jquery-1.8.3.min.js"></script>
+    <script src="./js/video.js"></script>
+    <script src="./js/videojs-contrib-hls.js"></script>
+    <link rel="stylesheet" href="https://g.alicdn.com/de/prismplayer/2.8.1/skins/default/aliplayer-min.css" />
+    <script type="text/javascript" charset="utf-8" src="https://g.alicdn.com/de/prismplayer/2.8.1/aliplayer-min.js"></script>
+<style>
+    *{
+        margin: 0;
+        padding: 0;
+    }
+   div.cont_video {
+       width: 670px;
+       height: 377px;
+       margin: 10px auto;
+       position: relative;
+   }
+   div.vjs-poster {
+       width: 100%;
+       height: 100%;
+       background-size: 100% 100%;
+       position: absolute;
+       top: 0;
+       left: 50%;
+       transform: translateX(-50%);
+       -webkit-transform: translateX(-50%);
+       -moz-transform: translateX(-50%);
+       -ms-transform: translateX(-50%);
+       -o-transform: translateX(-50%);
+   }
+   /* aliplay样式 */
+   .prism-player {
+    position: absolute;
+    z-index: 0;
+ }
+ .prism-player.show {
+    z-index: 10;
+ }
+ .prism-aplaydom {
+     margin: 20px;
+     width: 670px;
+     height: 377px;
+     position: relative;
+ }
+ .prism-coverimg {
+     width: 100%;
+     height: 100%;
+     position: absolute;
+     top: 0;
+     left: 0;
+     z-index: 8;
+ }
+ .prism-coverimg img {
+     width: 100%;
+     height: 100%;
+ }
+ .prism-playicon {
+     width: 80px;
+     height: 80px;
+     border-radius: 60px;
+     z-index: 9;
+     position: absolute;
+     top: 50%;
+     left: 50%;
+     transform: translate(-50%,-50%);
+     -webkit-transform: translate(-50%,-50%);
+     -moz-transform: translate(-50%,-50%);
+     -ms-transform: translate(-50%,-50%);
+     -o-transform: translate(-50%,-50%);
+     background: url("https://images.weserv.nl/?url=file.thepaper.cn/www/v3/img/video_slide_play.png") center no-repeat;
+ }
+</style>
+</head>
+<body>
+   
+    <video
+        class="cont_video" 
+        src="http://video2.thepaper.cn/output/0ef0862c960747be85730c0c7df08887/hd/981c0c9c-af99-4ee7-8f24-a94f3fe4850e-1a9853bc-19af-c360-abb3-08d5c101819c.mp4" 
+        controls="true" 
+        webkit-playsinline="" 
+        playsinline="" 
+        x5-playsinline="" 
+        x-webkit-airplay="allow"  
+        preload="auto"  
+        poster="./img/319.jpg"
+    >
+    </video>
+    <video
+        class="cont_video" 
+        src="http://recordcdn.quklive.com/broadcast/activity/1555367341609749/record.m3u8?aaa" 
+        controls="true" 
+        webkit-playsinline="" 
+        playsinline="" 
+        x5-playsinline="" 
+        x-webkit-airplay="allow"  
+        preload="auto"  
+        poster="./img/395.jpg"
+    >
+    </video>
+    <script>
+        $(function() {
+
+        function newDetailVideoInit(config) {
+                var  mvideos=[]
+                var config = config || {};
+                var type = config.type || "videojs";
+                var videos = config.videos || $('.cont_video');
+                if(type == "videojs") {
+                    videoObj = MyVideoJs;
+                }
+                if(type == "aliplayjs") {
+                    videoObj = MyAliplayVideo;
+                }
+                videos.each(function (index,video) {
+                    config['index'] = index+1;
+                    config['video'] = $(this);
+                    var mvideo = new videoObj(config);
+                    mvideos.push(mvideo);
+                    mvideo.init();
+                })
+                return mvideos;
+            }
+
+        function MyAliplayVideo(config){
+            this.video = config.video || {};
+            this.index = config.index || "";
+            this.autoplay = config.autoplay || false;
+            this.id = "aliplayer-js"+ this.index;
+            this.defaultClass = "prism-player";
+            this.src=  this.video.attr("src") || "";
+            this.cover = this.video.attr("poster") ||"";
+            this.width = config.width || "670px";
+            this.height =  config.height|| "377px";
+            this.isLive =  config.isLive || false;
+            this.rePlay =  config.rePlay || false;
+            this.showBuffer = config.showBuffer || false;
+            this.snapshot=  config.snapshot ||false;
+            this.aliplayDiv = {};//阿里需要的结构
+            if(typeof config.useFlashPrism  == "undefined" || config.useFlashPrism  ){
+                this.useFlashPrism = true;
+            }else{
+                this.useFlashPrism = false;
+            }
+        }
+
+        MyAliplayVideo.prototype.init = function(){
+            this.createAliplayDiv();
+            this.addPlayEvent();
+            this.Aliplay();
+        }
+        MyAliplayVideo.prototype.createAliplayDiv = function(){
+            var html='<div class="prism-aplaydom"><div class="prism-playicon"></div><div class="prism-coverimg"><img src="./img/395.jpg"></div><div class='+this.defaultClass+' id='+this.id+'></div></div>'
+            this.aliplayDiv = $(html);
+            this.video.after(this.aliplayDiv);
+            this.video.remove();
+        }
+
+        // 注册   点击图片，图片隐藏  视频播放 事件
+
+        MyAliplayVideo.prototype.addPlayEvent = function(){
+            
+            var playIcon = this.aliplayDiv.find(".prism-playicon");
+            var that = this;
+            playIcon.on("click",function() {
+                that.playVideo();
+            })
+        } 
+        //点击图片，图片隐藏  视频播放
+        MyAliplayVideo.prototype.playVideo = function(){
+            var videoDiv = this.aliplayDiv.find("."+this.defaultClass);
+            var playIcon = this.aliplayDiv.find(".prism-playicon");
+            playIcon.hide();
+            videoDiv.addClass("show");
+            this.player.play();
+        } 
+        var AliplayVideoLayout = function (type) {
+            if(type == true) {
+            return [
+            {name:"bigPlayButton", align:"blabs", x:295, y:150},
+            {name:"controlBar", align:"blabs", x:0, y:0,
+                children: [
+                  {name:"progress", align:"tlabs", x: 0, y:0},
+                  {name:"playButton", align:"tl", x:15, y:26},
+                  {name:"nextButton", align:"tl", x:10, y:26},
+                  {name:"timeDisplay", align:"tl", x:10, y:24},
+                  {name:"fullScreenButton", align:"tr", x:10, y:25},
+                  {name:"streamButton", align:"tr", x:10, y:23},
+                  {name:"volume", align:"tr", x:10, y:25}
+                ]
+            },
+            {name:"fullControlBar", align:"tlabs", x:0, y:0,
+                children: [
+                  {name:"fullTitle", align:"tl", x:25, y:6},
+                  {name:"fullNormalScreenButton", align:"tr", x:24, y:13},
+                  {name:"fullTimeDisplay", align:"tr", x:10, y:12},
+                  {name:"fullZoom", align:"cc"}
+                ]
+            }
+        ]
+        }else {
+           return [
+            {name: "bigPlayButton", align: "blabs", x: 295, y: 150},
+            {name: "H5Loading", align: "cc"},
+            {name: "errorDisplay", align: "tlabs", x: 0, y: 0},
+            {name: "infoDisplay"},
+            {name:"tooltip", align:"blabs",x: 0, y: 56},
+            {name: "thumbnail"},
+            {name: "controlBar", align: "blabs", x: 0, y: 0,
+               children: [
+                   {name: "progress", align: "blabs", x: 0, y: 44},
+                   {name: "playButton", align: "tl", x: 15, y: 12},
+                   {name: "timeDisplay", align: "tl", x: 10, y: 7},
+                   {name: "fullScreenButton", align: "tr", x: 10, y: 12},
+                   {name:"subtitle", align:"tr",x:15, y:12},
+                   {name:"setting", align:"tr",x:15, y:12},
+                   {name: "volume", align: "tr", x: 5, y: 10}
+                ]
+            }
+           ]
+        }
+    }
+       
+        MyAliplayVideo.prototype.Aliplay = function(){
+            var that= this;
+            var layout = AliplayVideoFlashLayout(this.useFlashPrism);
+            this.player = new Aliplayer({
+            "id": this.id,
+            "source": this.src,
+            "width": this.width,
+            "height": this.height,
+            "autoplay": this.autoplay,
+            "isLive": this.isLive,
+            "rePlay": this.rePlay,
+            "showBuffer": false,
+            "snapshot": false,
+            "showBarTime": this.showBarTime,
+            "useFlashPrism": this.useFlashPrism ,
+             "skinLayout": layout,
+            
+        
+            })
+            this.player.on('ready',()=>{
+                that.addPlayEvent();
+            })
+        }
+        function MyVideoJs(config) {
+            this.video = config.video ||{};
+            this.index = config.index || "";
+            this.id = "my-player-"+this.index;
+            this.poster = this.video.poster;
+        }
+        MyVideoJs.prototype.init = function(){
+            this.video.attr("id",this.id)
+            this.video.addClass("video-js vjs-default-skin vjs-big-play-centered")
+            this.videoType();
+            var that =this;  
+            setTimeout(function (){
+                that.videoPlay();
+            },0)
+            // that.videoPlay();
+        }
+
+
+        MyVideoJs.prototype.videoPlay = function(){
+            videojs(this.id, {
+            controls:true,
+            webkitPlaysinline:true,
+            playsinline:true,
+            x5Playsinline:true,
+            xWebkitAirplay:true,
+            preload: "allow",
+            poster:this.poster,
+            });
+        }
+        //  判断视频类型是否是m3u8 
+        MyVideoJs.prototype.videoType = function(){
+            if(this.video[0].src.search("m3u8")!=-1) {
+                this.video[0].innerHTML="<source src="+this.video[0].src+" type='application/x-mpegURL'/>"
+            }
+        }
+        
+        // var myvideo =  newDetailVideoInit({type:"aliplayjs"})
+       var myvideo =  newDetailVideoInit({type:"videojs"})
+    })
+    </script>
+</body>
+</html>
